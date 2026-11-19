@@ -6,7 +6,15 @@ public class ChatApp {
     private static final Scanner input = new Scanner(System.in);
     private static final Login login = new Login();
     private static final MessageStorage store = new MessageStorage();
-    private static int totalMessagesSent = 0;
+    
+    // Parallel arrays for Part 3
+    private static String[] sentArr = new String[50];
+    private static String[] discardArr = new String[50];
+    private static String[] storedArr = new String[50];
+    private static String[] hashArr = new String[50];
+    private static String[] idArr = new String[50];
+    private static String[] recArr = new String[50];
+    private static int index = 0;
 
     public static void main(String[] args) {
         System.out.println("==================================");
@@ -81,13 +89,15 @@ public class ChatApp {
             System.out.println("1) Send Messages");
             System.out.println("2) Show recently sent messages");
             System.out.println("3) Quit");
+            System.out.println("4) Stored Messages");
             String choice = getText("Choose an option: ");
 
             switch (choice) {
                 case "1": createMessages(); break;
                 case "2": System.out.println("Coming Soon."); break;
                 case "3": active = false; System.out.println("Goodbye!"); break;
-                default: System.out.println("Invalid option. Please choose 1-3.");
+                case "4": showStoredMenu(); break;
+                default: System.out.println("Invalid option. Please choose 1-4.");
             }
         }
     }
@@ -109,7 +119,6 @@ public class ChatApp {
         while (count < total) {
             System.out.println("\n--- Message " + (count + 1) + " of " + total + " ---");
             
-            // Loop until recipient is valid
             String rec = "";
             do {
                 rec = getText("Recipient cell number (e.g. +27838968976): ");
@@ -118,7 +127,6 @@ public class ChatApp {
                 System.out.println("Cell phone number incorrectly formatted or does not contain an international code.");
             } while (true);
 
-            // Loop until message text is valid
             String text = "";
             do {
                 text = getText("Message text: ");
@@ -128,27 +136,116 @@ public class ChatApp {
             } while (true);
 
             Message msg = new Message(count, rec, text);
-            System.out.println("\n" + msg.printMessage());
-            
             System.out.println("\n1) Send Message\n2) Store Message\n3) Disregard Message");
             String act = getText("Choose: ");
 
-            // Process user choice
             if (act.equals("1")) {
                 msg.setFlag("Sent");
-                totalMessagesSent++;
+                sentArr[index] = text;
+                idArr[index] = msg.getMessageID();
+                hashArr[index] = msg.getMessageHash();
+                recArr[index] = rec;
+                index++;
                 System.out.println("Message sent.");
             } else if (act.equals("2")) {
                 msg.setFlag("Stored");
+                storedArr[index] = text;
+                idArr[index] = msg.getMessageID();
+                hashArr[index] = msg.getMessageHash();
+                recArr[index] = rec;
+                index++;
                 store.saveMessage(msg);
-                totalMessagesSent++;
                 System.out.println("Message stored.");
             } else {
                 msg.setFlag("Disregard");
+                discardArr[index] = text;
+                index++;
                 System.out.println("Message disregarded.");
             }
             count++;
         }
-        System.out.println("Total messages processed: " + totalMessagesSent);
+        System.out.println("Total messages processed: " + index);
+    }
+
+    // Display stored messages menu
+    private static void showStoredMenu() {
+        boolean active = true;
+        while (active) {
+            System.out.println("\n=== STORED MESSAGES ===");
+            System.out.println("1) Display sender and recipient");
+            System.out.println("2) Display longest message");
+            System.out.println("3) Search by Message ID");
+            System.out.println("4) Search by recipient");
+            System.out.println("5) Delete by Message Hash");
+            System.out.println("6) Full Report");
+            System.out.println("7) Back");
+            String choice = getText("Choose: ");
+
+            switch (choice) {
+                case "1":
+                    System.out.println("Sender: " + login.getFullName());
+                    for (int i = 0; i < storedArr.length; i++) {
+                        if (storedArr[i] != null) System.out.println("To: " + recArr[i] + " | Msg: " + storedArr[i]);
+                    }
+                    break;
+                case "2":
+                    String longest = "";
+                    for (String s : storedArr) {
+                        if (s != null && s.length() > longest.length()) longest = s;
+                    }
+                    System.out.println("Longest Message: " + longest);
+                    break;
+                case "3":
+                    String searchId = getText("Enter Message ID: ");
+                    boolean foundId = false;
+                    for (int i = 0; i < idArr.length; i++) {
+                        if (searchId.equals(idArr[i]) && storedArr[i] != null) {
+                            System.out.println("To: " + recArr[i] + " | Msg: " + storedArr[i]);
+                            foundId = true;
+                        }
+                    }
+                    if (!foundId) System.out.println("Not found.");
+                    break;
+                case "4":
+                    String searchRec = getText("Enter Recipient: ");
+                    boolean foundRec = false;
+                    for (int i = 0; i < recArr.length; i++) {
+                        if (searchRec.equals(recArr[i]) && storedArr[i] != null) {
+                            System.out.println("Msg: " + storedArr[i]);
+                            foundRec = true;
+                        }
+                    }
+                    if (!foundRec) System.out.println("No messages found.");
+                    break;
+                case "5":
+                    String searchHash = getText("Enter Message Hash: ");
+                    String deleted = store.deleteByHash(searchHash);
+                    if (deleted != null) {
+                        System.out.println("Message: \"" + deleted + "\" successfully deleted.");
+                        for (int i = 0; i < hashArr.length; i++) {
+                            if (searchHash.equals(hashArr[i])) {
+                                storedArr[i] = null;
+                                hashArr[i] = null;
+                            }
+                        }
+                    } else {
+                        System.out.println("Hash not found.");
+                    }
+                    break;
+                case "6":
+                    System.out.println("=== FULL REPORT ===");
+                    for (int i = 0; i < storedArr.length; i++) {
+                        if (storedArr[i] != null) {
+                            System.out.println("Hash: " + hashArr[i] + " | To: " + recArr[i] + " | Msg: " + storedArr[i]);
+                        }
+                    }
+                    break;
+                case "7":
+                    active = false;
+                    break;
+                default:
+                    System.out.println("Invalid option. Please enter 1-7.");
+            }
+        }
     }
 }

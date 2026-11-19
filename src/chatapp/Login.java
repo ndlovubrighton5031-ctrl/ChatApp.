@@ -63,4 +63,9 @@ public class Login {
         }
         return "Username or password incorrect, please try again.";
     }
+
+    // Get full name for reports
+    public String getFullName() {
+        return userRecord[0] + " " + userRecord[1];
+    }
 }

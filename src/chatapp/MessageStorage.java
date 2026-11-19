@@ -38,6 +38,11 @@ public class MessageStorage {
         }
     }
 
+    // Read JSON into an array
+    public Message[] loadMessages() {
+        return getList().toArray(new Message[0]);
+    }
+
     // Write list to JSON file
     private void saveList(List<Message> list) {
         try {
@@ -46,5 +51,19 @@ public class MessageStorage {
         } catch (IOException e) {
             System.out.println("Error writing to file: " + e.getMessage());
         }
+    }
+
+    // Remove message by hash and return its text
+    public String deleteByHash(String hash) {
+        List<Message> list = getList();
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).getMessageHash().equals(hash)) {
+                String removedText = list.get(i).getMessageText();
+                list.remove(i);
+                saveList(list);
+                return removedText;
+            }
+        }
+        return null;
     }
 }
